@@ -538,6 +538,8 @@ PARAM_DEFINE_FLOAT(MC_TPA_RATE_D, 0.0f);
  * The D-term uses the derivative of the rate and thus is the most susceptible to noise.
  * Therefore, using a D-term filter allows to decrease the driver-level filtering, which
  * leads to reduced control latency and permits to increase the P gains.
+ * A good rule of thumb is to fix the time constant of this filter equal to one tenth of the
+ * derivative time constant: MC_DTERM_CUTOFF = 10 * MC_(ROLL|PITCH)RATE_P / (2 * pi * MC_(ROLL|PITCH)RATE_D)
  * A value of 0 disables the filter.
  *
  * @unit Hz
@@ -547,7 +549,7 @@ PARAM_DEFINE_FLOAT(MC_TPA_RATE_D, 0.0f);
  * @increment 10
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_DTERM_CUTOFF, 30.f);
+PARAM_DEFINE_FLOAT(MC_DTERM_CUTOFF, 0.f);
 
 /**
  * Multicopter air-mode
