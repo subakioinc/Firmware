@@ -201,7 +201,7 @@ else
 	#
 	load_mon start
 
-	#
+	# LED로 상태 표시
 	# Start system state indicator.
 	#
 	rgbled start
@@ -214,6 +214,7 @@ else
 	fi
 
 	#
+	# tone_alarm driver를 구동
 	# Start the tone_alarm driver.
 	# Needs to be started after the parameters are loaded (for CBRK_BUZZER).
 	# Note that this will still play the already published startup tone.

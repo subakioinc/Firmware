@@ -52,6 +52,26 @@ struct PositionControlStates {
 	float yaw;
 };
 
+/*
+position 제어 : P 제어
+velocity 제어 : PID 제어
+
+입력 :
+   * 비행체의 position/velocity/yaw
+   * setpoint position/velocity/thrust/yaw/yaw-speed
+   * global limit보다 stricter한 제약
+
+출력 :
+   * thrust vector 및 yaw-setpoint
+
+position과 velocity set-point가 있는 경우, velocity set-point는 feed-forward로 사용.
+먄약 feed-forward가 활성화 되어 있는 경우 P제어기의 출력의 velocity 컴포넌트는 feed-forward 컴포넌트보다 높은 우선순위를 갖니다.
+
+NAN인 setpoint는 설정이 되지 않은 것으로 가정.
+position/velocity-와 thrust-setpoint- 가 있다면 thrust-setpoint는 생략되고 position-velocity-PID-loop로부터 다시 계산된다.
+
+*/
+
 /**
  * 	Core Position-Control for MC.
  * 	This class contains P-controller for position and
@@ -88,12 +108,14 @@ public:
 	void overwriteParams();
 
 	/**
+	 * 현재 비행 상태 업데이트
 	 * Update the current vehicle state.
 	 * @param PositionControlStates structure
 	 */
 	void updateState(const PositionControlStates &states);
 
 	/**
+	 * 원하는 setpoint 업데이트
 	 * Update the desired setpoints.
 	 * @param setpoint a vehicle_local_position_setpoint_s structure
 	 * @return true if setpoint has updated correctly
@@ -101,12 +123,14 @@ public:
 	bool updateSetpoint(const vehicle_local_position_setpoint_s &setpoint);
 
 	/**
+	 * global limit보다 엄격한 제약을 설정
 	 * Set constraints that are stricter than the global limits.
 	 * @param constraints a PositionControl structure with supported constraints
 	 */
 	void updateConstraints(const vehicle_constraints_s &constraints);
 
 	/**
+	 * thrust, yaw, yawspeed-setpoint를 업데이트하는 P-position과 PID-velocity 제어기를 적용
 	 * Apply P-position and PID-velocity controller that updates the member
 	 * thrust, yaw- and yawspeed-setpoints.
 	 * @see _thr_sp
@@ -117,12 +141,14 @@ public:
 	void generateThrustYawSetpoint(const float dt);
 
 	/**
+	 * xy에 대한 integral term을 0으로 설정
 	 * 	Set the integral term in xy to 0.
 	 * 	@see _thr_int
 	 */
 	void resetIntegralXY() { _thr_int(0) = _thr_int(1) = 0.0f; }
 
 	/**
+	 * z에 대한 integral term을 0으로 설정
 	 * 	Set the integral term in z to 0.
 	 * 	@see _thr_int
 	 */
@@ -136,6 +162,7 @@ public:
 	const matrix::Vector3f &getThrustSetpoint() { return _thr_sp; }
 
 	/**
+	 * yaw_sp를 얻기
 	 * 	Get the
 	 * 	@see _yaw_sp
 	 * 	@return The yaw set-point member.
@@ -143,6 +170,7 @@ public:
 	const float &getYawSetpoint() { return _yaw_sp; }
 
 	/**
+	 * yawspeed_sp
 	 * 	Get the
 	 * 	@see _yawspeed_sp
 	 * 	@return The yawspeed set-point member.
@@ -150,6 +178,7 @@ public:
 	const float &getYawspeedSetpoint() { return _yawspeed_sp; }
 
 	/**
+	 * 제어루프에서 실행된 velocity set-point을 반환. velocity control-loop가 skip되면 Nan을 반환
 	 * 	Get the
 	 * 	@see _vel_sp
 	 * 	@return The velocity set-point that was executed in the control-loop. Nan if velocity control-loop was skipped.
@@ -171,6 +200,7 @@ public:
 	}
 
 	/**
+	 * pos_sp를 얻기
 	 * 	Get the
 	 * 	@see _pos_sp
 	 * 	@return The position set-point that was executed in the control-loop. Nan if the position control-loop was skipped.
@@ -197,6 +227,7 @@ protected:
 
 private:
 	/**
+	 * setpoint를 내부 setpoint로 매핑하며 성공적으로 매핑되면 true 반환
 	 * Maps setpoints to internal-setpoints.
 	 * @return true if mapping succeeded.
 	 */
