@@ -759,7 +759,28 @@ GPS::run()
 				int helper_ret;
 
 				while ((helper_ret = _helper->receive(TIMEOUT_5HZ)) > 0 && !should_exit()) {
-
+					if(_mode == GPS_DRIVER_MODE_ASHTECH)
+					{
+						_report_gps_pos.timestamp = hrt_absolute_time();
+						// _report_gps_pos.lat = (int32_t)47.378301e7f;
+						// _report_gps_pos.lon = (int32_t)8.538777e7f;
+						// _report_gps_pos.alt = (int32_t)1200e3f;
+						_report_gps_pos.alt_ellipsoid = 10000;
+						_report_gps_pos.s_variance_m_s = -1.0f;
+						_report_gps_pos.c_variance_rad = 0.1f;
+						_report_gps_pos.fix_type = 3;
+						_report_gps_pos.eph = 0.1f;
+						_report_gps_pos.epv = 0.1f;
+						_report_gps_pos.hdop = 0.1f;
+						_report_gps_pos.vdop = 0.1f;
+						_report_gps_pos.vel_n_m_s = 0.0f;
+						_report_gps_pos.vel_e_m_s = 0.0f;
+						_report_gps_pos.vel_d_m_s = 0.0f;
+						_report_gps_pos.vel_m_s = 0.0f;
+						_report_gps_pos.cog_rad = 0.0f;
+						_report_gps_pos.vel_ned_valid = true;
+						_report_gps_pos.satellites_used = 10;
+					}
 					if (helper_ret & 1) {
 						publish();
 
