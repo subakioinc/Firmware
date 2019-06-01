@@ -729,13 +729,14 @@ GPS::run()
 				_helper = new GPSDriverMTK(&GPS::callback, this, &_report_gps_pos);
 				break;
 
-			case GPS_DRIVER_MODE_ASHTECH:
-				_helper = new GPSDriverAshtech(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info, heading_offset);
+			case GPS_DRIVER_MODE_ASHTECH: //GPSDriverAshtech 생성자에서 heading_offset
+				_helper = new GPSDriverAshtech(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info);
+				//_helper = new GPSDriverAshtech(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info, heading_offset);
 				break;
 
-			case GPS_DRIVER_MODE_EMLIDREACH:
-				_helper = new GPSDriverEmlidReach(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info);
-				break;
+			// case GPS_DRIVER_MODE_EMLIDREACH:
+			// 	_helper = new GPSDriverEmlidReach(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info);
+			// 	break;
 
 			default:
 				break;
@@ -759,7 +760,31 @@ GPS::run()
 				int helper_ret;
 
 				while ((helper_ret = _helper->receive(TIMEOUT_5HZ)) > 0 && !should_exit()) {
-
+					if(_mode == GPS_DRIVER_MODE_ASHTECH)
+					{
+						_report_gps_pos.timestamp = hrt_absolute_time();
+						// _report_gps_pos.lat = (int32_t)47.378301e7f;
+						// _report_gps_pos.lon = (int32_t)8.538777e7f;
+						// _report_gps_pos.alt = (int32_t)1200e3f;
+						_report_gps_pos.alt_ellipsoid = 10000;
+						_report_gps_pos.s_variance_m_s = -1.0f;
+						_report_gps_pos.c_variance_rad = 0.1f;
+						_report_gps_pos.fix_type = 3;
+						_report_gps_pos.eph = 0.1f;
+						_report_gps_pos.epv = 0.1f;
+						_report_gps_pos.hdop = 0.1f;
+						_report_gps_pos.vdop = 0.1f;
+						_report_gps_pos.vel_n_m_s = 0.0f;
+						_report_gps_pos.vel_e_m_s = 0.0f;
+						_report_gps_pos.vel_d_m_s = 0.0f;
+						_report_gps_pos.vel_m_s = 0.0f;
+						_report_gps_pos.cog_rad = 0.0f;
+						_report_gps_pos.vel_ned_valid = true;
+						_report_gps_pos.satellites_used = 10;
+						//head 정보 추가
+						_report_gps_pos.heading = NAN;
+						_report_gps_pos.heading_offset = NAN;
+					}
 					if (helper_ret & 1) {
 						publish();
 
@@ -832,13 +857,14 @@ GPS::run()
 					break;
 
 				case GPS_DRIVER_MODE_ASHTECH:
-					_mode = GPS_DRIVER_MODE_EMLIDREACH;
+					_mode = GPS_DRIVER_MODE_UBX; //_mode = GPS_DRIVER_MODE_EMLIDREACH;
+					usleep(500000);
 					break;
 
-				case GPS_DRIVER_MODE_EMLIDREACH:
-					_mode = GPS_DRIVER_MODE_UBX;
-					px4_usleep(500000); // tried all possible drivers. Wait a bit before next round
-					break;
+				// case GPS_DRIVER_MODE_EMLIDREACH:
+				// 	_mode = GPS_DRIVER_MODE_UBX;
+				// 	px4_usleep(500000); // tried all possible drivers. Wait a bit before next round
+				// 	break;
 
 				default:
 					break;
