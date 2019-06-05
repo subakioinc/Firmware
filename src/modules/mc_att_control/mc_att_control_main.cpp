@@ -554,6 +554,7 @@ MulticopterAttitudeControl::pid_attenuations(float tpa_breakpoint, float tpa_rat
 	return pidAttenuationPerAxis;
 }
 
+// rates_sp, thrust_sp  =====> att_control
 /*
  * Attitude rates controller.
  * Input: '_rates_sp' vector, '_thrust_sp'
@@ -591,24 +592,30 @@ MulticopterAttitudeControl::control_attitude_rates(float dt)
 		rates(2) = _sensor_gyro.z;
 	}
 
+	// sensor로부터 body frame에 대한 rate에대해서 보드 회전을 적용하여 보정하기
 	// rotate corrected measurements from sensor to body frame
 	rates = _board_rotation * rates;
 
+	// 실행 중 발생하는 bias 에러에 대한 보정
 	// correct for in-run bias errors
 	rates(0) -= _sensor_bias.gyro_x_bias;
 	rates(1) -= _sensor_bias.gyro_y_bias;
 	rates(2) -= _sensor_bias.gyro_z_bias;
 
+	//PID
 	Vector3f rates_p_scaled = _rate_p.emult(pid_attenuations(_param_mc_tpa_break_p.get(), _param_mc_tpa_rate_p.get()));
 	Vector3f rates_i_scaled = _rate_i.emult(pid_attenuations(_param_mc_tpa_break_i.get(), _param_mc_tpa_rate_i.get()));
 	Vector3f rates_d_scaled = _rate_d.emult(pid_attenuations(_param_mc_tpa_break_d.get(), _param_mc_tpa_rate_d.get()));
 
+	// 각속도 error
 	/* angular rates error */
 	Vector3f rates_err = _rates_sp - rates;
 
+	// low-pass 필터를 D-term에 적용
 	/* apply low-pass filtering to the rates for D-term */
 	Vector3f rates_filtered(_lp_filters_d.apply(rates));
 
+	//
 	_att_control = rates_p_scaled.emult(rates_err) +
 		       _rates_int -
 		       rates_d_scaled.emult(rates_filtered - _rates_prev_filtered) / dt +
@@ -617,33 +624,38 @@ MulticopterAttitudeControl::control_attitude_rates(float dt)
 	_rates_prev = rates;
 	_rates_prev_filtered = rates_filtered;
 
+	// 착륙한 때가 아니라야 완전히 업데이트
 	/* update integral only if we are not landed */
 	if (!_vehicle_land_detected.maybe_landed && !_vehicle_land_detected.landed) {
 		for (int i = AXIS_INDEX_ROLL; i < AXIS_COUNT; i++) {
+			// + 제어 포화 검사
 			// Check for positive control saturation
 			bool positive_saturation =
 				((i == AXIS_INDEX_ROLL) && _saturation_status.flags.roll_pos) ||
 				((i == AXIS_INDEX_PITCH) && _saturation_status.flags.pitch_pos) ||
 				((i == AXIS_INDEX_YAW) && _saturation_status.flags.yaw_pos);
-
+			// - 제어 포화 검사
 			// Check for negative control saturation
 			bool negative_saturation =
 				((i == AXIS_INDEX_ROLL) && _saturation_status.flags.roll_neg) ||
 				((i == AXIS_INDEX_PITCH) && _saturation_status.flags.pitch_neg) ||
 				((i == AXIS_INDEX_YAW) && _saturation_status.flags.yaw_neg);
 
+			// 추가 + 제어 포화 방지
 			// prevent further positive control saturation
 			if (positive_saturation) {
 				rates_err(i) = math::min(rates_err(i), 0.0f);
 
 			}
 
+			// 추가 - 제어 포화 방지
 			// prevent further negative control saturation
 			if (negative_saturation) {
 				rates_err(i) = math::max(rates_err(i), 0.0f);
 
 			}
 
+			//
 			// Perform the integration using a first order method and do not propagate the result if out of range or invalid
 			float rate_i = _rates_int(i) + rates_i_scaled(i) * rates_err(i) * dt;
 
@@ -654,6 +666,7 @@ MulticopterAttitudeControl::control_attitude_rates(float dt)
 		}
 	}
 
+	// 명시적으로 integrator 상태를 제한
 	/* explicitly limit the integrator state */
 	for (int i = AXIS_INDEX_ROLL; i < AXIS_COUNT; i++) {
 		_rates_int(i) = math::constrain(_rates_int(i), -_rate_int_lim(i), _rate_int_lim(i));
@@ -751,12 +764,14 @@ MulticopterAttitudeControl::run()
 	bool reset_yaw_sp = true;
 	float attitude_dt = 0.f;
 
+	// gyro 기준으로 update 동작
 	while (!should_exit()) {
 
 		// check if the selected gyro has updated first
 		sensor_correction_poll();
 		poll_fds.fd = _sensor_gyro_sub[_selected_gyro];
 
+		// 100ms 동안 기다리기
 		/* wait for up to 100ms for data */
 		int pret = px4_poll(&poll_fds, 1, 100);
 
@@ -765,6 +780,7 @@ MulticopterAttitudeControl::run()
 			continue;
 		}
 
+		//
 		/* this is undesirable but not much we can do - might want to flag unhappy status */
 		if (pret < 0) {
 			PX4_ERR("poll error %d, %d", pret, errno);
@@ -775,17 +791,22 @@ MulticopterAttitudeControl::run()
 
 		perf_begin(_loop_perf);
 
+		// gyro 데이터 변경되는 경우 제어기 수행
 		/* run controller on gyro changes */
 		if (poll_fds.revents & POLLIN) {
 			const hrt_abstime now = hrt_absolute_time();
 
+			// dt의 최소/최대인 경우 가이드 값
 			// Guard against too small (< 0.2ms) and too large (> 20ms) dt's.
 			const float dt = math::constrain(((now - last_run) / 1e6f), 0.0002f, 0.02f);
 			last_run = now;
 
+			// gyro 데이터 복사
 			/* copy gyro data */
 			orb_copy(ORB_ID(sensor_gyro), _sensor_gyro_sub[_selected_gyro], &_sensor_gyro);
 
+			// gyro 업데이트되면 rate 제어기 즉시 수행
+			// rate 제어 -> actuator 제어 publish -> rate 제어기 상태 publish
 			/* run the rate controller immediately after a gyro update */
 			if (_v_control_mode.flag_control_rates_enabled) {
 				control_attitude_rates(dt);
@@ -794,6 +815,7 @@ MulticopterAttitudeControl::run()
 				publish_rate_controller_status();
 			}
 
+			// 다른 topic에 대한 update 검사
 			/* check for updates in other topics */
 			vehicle_control_mode_poll();
 			vehicle_status_poll();
@@ -806,6 +828,8 @@ MulticopterAttitudeControl::run()
 			const bool attitude_updated = vehicle_attitude_poll();
 			attitude_dt += dt;
 
+			// rattitude 모드 인지, 조종이 pitch나 roll의 threshold을 넘어가는지 검사
+			// (yaw는 일반 att 제어에서 360 회전이 가능) 만약 둘다 맞다면
 			/* Check if we are in rattitude mode and the pilot is above the threshold on pitch
 			 * or roll (yaw can rotate 360 in normal att control). If both are true don't
 			 * even bother running the attitude controllers */
@@ -822,11 +846,13 @@ MulticopterAttitudeControl::run()
 			// vehicle is a tailsitter in transition mode
 			const bool is_tailsitter_transition = _vehicle_status.in_transition_mode && _is_tailsitter;
 
+			// att 제어가 가능한 상태인지 확인
 			bool run_att_ctrl = _v_control_mode.flag_control_attitude_enabled && (is_hovering || is_tailsitter_transition);
 
-
+			// att 제어가 동작 중인 경우
 			if (run_att_ctrl) {
 				if (attitude_updated) {
+					// Manual Flight Mode에서 stick 입력으로부터 att setpoint를 생성
 					// Generate the attitude setpoint from stick inputs if we are in Manual/Stabilized mode
 					if (_v_control_mode.flag_control_manual_enabled &&
 							!_v_control_mode.flag_control_altitude_enabled &&
@@ -835,12 +861,14 @@ MulticopterAttitudeControl::run()
 						generate_attitude_setpoint(attitude_dt, reset_yaw_sp);
 						attitude_setpoint_generated = true;
 					}
-
+					// att 제어기 동작
+					// att 제어기 -> rate setpoint publish 하기
 					control_attitude();
 					publish_rates_setpoint();
 				}
 
 			} else {
+				// att 제어기가 비활성화 상태인 경우, rate setpoint topic을 읽어오기
 				/* attitude controller disabled, poll rates setpoint topic */
 				if (_v_control_mode.flag_control_manual_enabled && is_hovering) {
 					if (manual_control_updated) {
@@ -855,6 +883,7 @@ MulticopterAttitudeControl::run()
 					}
 
 				} else {
+					// att 제어기가 비활성화 되어 있는 경우 rate setpoint topic을 읽어오기
 					/* attitude controller disabled, poll rates setpoint topic */
 					if (vehicle_rates_setpoint_poll()) {
 						_rates_sp(0) = _v_rates_sp.roll;
@@ -876,6 +905,8 @@ MulticopterAttitudeControl::run()
 			}
 
 			if (attitude_updated) {
+				// transition하는 동안 yaw setpoint를 초기화
+				// transition을 위한 att setpoint
 				// reset yaw setpoint during transitions, tailsitter.cpp generates
 				// attitude setpoint for the transition
 				reset_yaw_sp = (!attitude_setpoint_generated && !_v_control_mode.flag_control_rattitude_enabled) ||
@@ -884,7 +915,7 @@ MulticopterAttitudeControl::run()
 
 				attitude_dt = 0.f;
 			}
-
+			// disarm 동안 loop update rate를 계산
 			/* calculate loop update rate while disarmed or at least a few times (updating the filter is expensive) */
 			if (!_v_control_mode.flag_armed || (now - task_start) < 3300000) {
 				dt_accumulator += dt;
