@@ -535,6 +535,7 @@ MulticopterPositionControl::run()
 	_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
 	_home_pos_sub = orb_subscribe(ORB_ID(home_position));
 
+	// 기준 : vehicle_local_position 이고 초당 50회
 	_local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
 	orb_set_interval(_local_pos_sub, 20); // 50 Hz updates
 
@@ -548,11 +549,12 @@ MulticopterPositionControl::run()
 	poll_fd.events = POLLIN;
 
 	while (!should_exit()) {
+		// 20ms까지 기다리다 timeout
 		// poll for new data on the local position state topic (wait for up to 20ms)
 		const int poll_return = px4_poll(&poll_fd, 1, 20);
 		// poll_return == 0: go through the loop anyway to copy manual input at 50 Hz
 		// this is undesirable but not much we can do
-		if (poll_return < 0) {
+		if (poll_return < 0) { // error 발생
 			PX4_ERR("poll error %d %d", poll_return, errno);
 			continue;
 		}
@@ -560,6 +562,7 @@ MulticopterPositionControl::run()
 		poll_subscriptions();
 		parameters_update(false);
 
+		// dt 구하기
 		// set _dt in controllib Block - the time difference since the last loop iteration in seconds
 		const hrt_abstime time_stamp_current = hrt_absolute_time();
 		setDt((time_stamp_current - time_stamp_last_loop) / 1e6f);
@@ -567,7 +570,8 @@ MulticopterPositionControl::run()
 
 		const bool was_in_failsafe = _in_failsafe;
 		_in_failsafe = false;
-
+		// https://docs.px4.io/en/config_vtol/vtol_weathervane.html
+		// VTOL의 호버링을 모드에서 자동으로 nose를 맞바람
 		// activate the weathervane controller if required. If activated a flighttask can use it to implement a yaw-rate control strategy
 		// that turns the nose of the vehicle into the wind
 		if (_wv_controller != nullptr) {
@@ -581,12 +585,14 @@ MulticopterPositionControl::run()
 				_wv_controller->deactivate();
 			}
 
+			// yaw를 변경
 			_wv_controller->update(matrix::Quatf(_att_sp.q_d), _states.yaw);
 		}
 
 		// an update is necessary here because otherwise the takeoff state doesn't get skiped with non-altitude-controlled modes
 		_takeoff.updateTakeoffState(_control_mode.flag_armed, _vehicle_land_detected.landed, false, 10.f, !_control_mode.flag_control_climb_rate_enabled);
 
+		// motor가 idle 속도에 도달하기 까지의 takeoff를 지연
 		// takeoff delay for motors to reach idle speed
 		if (_takeoff.getTakeoffState() >= TakeoffState::ready_for_takeoff) {
 			// when vehicle is ready switch to the required flighttask
@@ -597,9 +603,11 @@ MulticopterPositionControl::run()
 			_flight_tasks.switchTask(FlightTaskIndex::None);
 		}
 
+		// task가 활성화된게 있는지 검사
 		// check if any task is active
 		if (_flight_tasks.isAnyTaskActive()) {
 
+			// flighttask에서 setpoint
 			// setpoints from flighttask
 			vehicle_local_position_setpoint_s setpoint;
 
