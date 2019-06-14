@@ -1,0 +1,6 @@
+module_name: Jaeeun Gas
+serial_config:
+    - command: gas start
+      port_config_param:
+        name: SENS_GAS_CFG
+        group: Sensors

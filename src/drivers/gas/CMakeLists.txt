@@ -31,13 +31,13 @@
 #
 ############################################################################
 
+
 px4_add_module(
 	MODULE drivers__gas
 	MAIN gas
-	STACK_MAIN 1200
-	COMPILE_FLAGS
+	STACK_MAIN 1400
 	SRCS
 		gas.cpp
 	MODULE_CONFIG
-	DEPENDS
+		module.yaml
 	)
