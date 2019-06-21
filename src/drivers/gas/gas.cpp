@@ -99,7 +99,7 @@ private:
 	int         	             _conversion_interval;
 	ringbuffer::RingBuffer	  *_reports;
 	int				               _fd;
-	uint8_t			             _linebuf[25];
+	uint8_t			             _linebuf[100];
 	uint8_t                   _cycle_counter;
 
 	unsigned char             _frame_data[4];
@@ -289,12 +289,20 @@ GAS::collect()
 	bytes_read = ::read(_fd, &_linebuf[0], sizeof(_linebuf));
 
 
+
 	if (bytes_read < 0) {
 		PX4_DEBUG("read err: %d \n", bytes_read);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 
 	} else if (bytes_read > 0) {
+		PX4_ERR("gas read! : %d", bytes_read);
+		for(int i=0; i<bytes_read; i++){
+			printf("%X ", _linebuf[i]);
+
+		}
+		PX4_ERR("\n");
+
 	}
 
 	if (!crc_valid) {
@@ -351,22 +359,27 @@ GAS::Run()
 		tcgetattr(_fd, &uart_config);
 
 		/* clear ONLCR flag (which appends a CR for every LF) */
+		//NL 문자를 CR-NL 문자로 맵핑하지 않습니다.
 		uart_config.c_oflag &= ~ONLCR;
 
 		/* no parity, one stop bit */
+		//stop bit : 1, partiy : none으로
 		uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-		unsigned speed = B115200;
+		unsigned speed = B115200; // Baud rate
 
 		/* set baud rate */
+		//uart_cofig의 터미널 입력 속도를 speed값으로 변경 return 0,-1(fail)
 		if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
 			PX4_ERR("CFG: %d ISPD", termios_state);
 		}
 
+		//uart_config 터미널의 출력속도를 speed 값으로 변경 return 0,-1(fail)
 		if ((termios_state = cfsetospeed(&uart_config, speed)) < 0) {
 			PX4_ERR("CFG: %d OSPD", termios_state);
 		}
 
+		//fd에 대한 터미널 속성을 바로 변경한다
 		if ((termios_state = tcsetattr(_fd, TCSANOW, &uart_config)) < 0) {
 			PX4_ERR("baud %d ATTR", termios_state);
 		}
