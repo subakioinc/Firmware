@@ -61,6 +61,7 @@
 #include <drivers/device/ringbuffer.h>
 
 #include <uORB/uORB.h>
+#include "gas_parser.h"
 
 
 //
@@ -280,9 +281,14 @@ GAS::collect()
 {
 	int bytes_read = 0;
 	bool crc_valid = false;
+	Parser parser = Parser();
+
+
 
 
 	perf_begin(_sample_perf);
+
+
 
 
 	/* read from the sensor (uart buffer) */
@@ -297,8 +303,11 @@ GAS::collect()
 
 	} else if (bytes_read > 0) {
 		PX4_ERR("gas read! : %d", bytes_read);
+
 		for(int i=0; i<bytes_read; i++){
 			printf("%X ", _linebuf[i]);
+			parser.Parse(_linebuf[i]);
+
 
 		}
 		PX4_ERR("\n");

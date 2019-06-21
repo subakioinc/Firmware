@@ -38,6 +38,7 @@ px4_add_module(
 	STACK_MAIN 1400
 	SRCS
 		gas.cpp
+		gas_parser.cpp
 	MODULE_CONFIG
 		module.yaml
 	)
