@@ -63,7 +63,6 @@ px4_add_board(
 		tone_alarm
 		uavcan
 		gas
-		gas_pub
 		gas_sub
 
 	MODULES

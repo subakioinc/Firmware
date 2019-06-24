@@ -1,6 +1,9 @@
 uint64 timestamp
 
-uint8 temp_high
-uint8 temp_low
-uint8 humid_high
-uint8 humid_low
+uint16 temp
+uint16 humid
+
+uint16 sensor1_cdc
+uint16 sensor2_cdc
+uint16 sensor3_cdc
+uint16 sensor4_cdc

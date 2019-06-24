@@ -18,6 +18,9 @@
 
 #include "gas_parser.h"
 
+#include <uORB/uORB.h>
+#include <uORB/topics/sensor_gas.h>
+
 
 void Parser::Parse(uint8_t c){
 
@@ -178,6 +181,21 @@ void Parser::Parse(uint8_t c){
         if(c == 0xFF){
             //Done!!
             PX4_INFO("Done!!!\n");
+
+            struct sensor_gas_s raw;
+    	    memset(&raw, 0, sizeof(raw));
+	        orb_advert_t gas_pub = orb_advertise(ORB_ID(sensor_gas), &raw);
+
+            raw.temp = 0;
+            raw.temp =  cdc.temp_high << 8 ;
+            raw.temp += cdc.temp_low;
+
+            orb_publish(ORB_ID(sensor_gas), gas_pub, &raw);
+            // raw.humid = ;   // cdc.hub_high + cdc.hum_low
+            // raw.sensor1_cdc = ;  //cdc.sensor1.high + cdc.sensor1.low
+            // raw.sensor2_cdc = ;  //cdc.sensor2.high + cdc.sensor2.low
+            // raw.sensor3_cdc = ;  //cdc.sensor3.high + cdc.sensor3.low
+            // raw.sensor4_cdc = ;  //cdc.sensor4.high + cdc.sensor4.low
         }
         expectedState = STATE_START_BYTE;
     }
