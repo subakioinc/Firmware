@@ -68,6 +68,8 @@
 /**
  * @file uavcan_servers.cpp
  *
+ * UAVCAN node의 기본 기능 구현
+ *
  * Implements basic functionality of UAVCAN node.
  *
  * @author Pavel Kirienko <pavel.kirienko@gmail.com>
@@ -100,6 +102,7 @@ UavcanServers::UavcanServers(uavcan::INode &main_node) :
 {
 }
 
+// 소멸자
 UavcanServers::~UavcanServers()
 {
 	if (_mutex_inited) {
@@ -109,6 +112,7 @@ UavcanServers::~UavcanServers()
 	_main_node.getDispatcher().removeRxFrameListener();
 }
 
+// 모듈
 int UavcanServers::stop()
 {
 	UavcanServers *server = instance();
@@ -132,6 +136,7 @@ int UavcanServers::stop()
 	return 0;
 }
 
+// main node 구동
 int UavcanServers::start(uavcan::INode &main_node)
 {
 	if (_instance != nullptr) {
@@ -140,6 +145,7 @@ int UavcanServers::start(uavcan::INode &main_node)
 	}
 
 	/*
+	 * Node 초기화
 	 * Node init
 	 */
 	_instance = new UavcanServers(main_node);
@@ -159,6 +165,7 @@ int UavcanServers::start(uavcan::INode &main_node)
 	}
 
 	/*
+	 * thread를 시작. 일반적으로 exit가 없음
 	 * Start the thread. Normally it should never exit.
 	 */
 	pthread_attr_t tattr;
@@ -192,6 +199,8 @@ int UavcanServers::init()
 	errno = 0;
 
 	/*
+	 * mutex 초기화. path 전달
+	 *
 	 * Initialize the mutex.
 	 * giving it its path
 	 */
@@ -210,6 +219,7 @@ int UavcanServers::init()
 
 
 	/*
+	 * firmware 버전 체크를 위한 초기화. path 전달
 	 * Initialize the fw version checker.
 	 * giving it its path
 	 */
@@ -220,6 +230,7 @@ int UavcanServers::init()
 		return ret;
 	}
 
+	// fw 파일 서버를 시작
 	/* Start fw file server back */
 
 	ret = _fw_server.start();
@@ -229,6 +240,7 @@ int UavcanServers::init()
 		return ret;
 	}
 
+	// UAVCAN_NODE_DB_PATH 디렉토리를 사용해서 node 할당을 위한 storage 백엔드를 초기화
 	/* Initialize storage back end for the node allocator using UAVCAN_NODE_DB_PATH directory */
 
 	ret = _storage_backend.init(UAVCAN_NODE_DB_PATH);
@@ -237,7 +249,7 @@ int UavcanServers::init()
 		warnx("FileStorageBackend init: %d, errno: %d", ret, errno);
 		return ret;
 	}
-
+	// UAVCAN_NODE_DB_PATH 디렉토리에 trace를 초기화
 	/* Initialize trace in the UAVCAN_NODE_DB_PATH directory */
 
 	ret = _tracer.init(UAVCAN_LOG_FILE);
@@ -247,10 +259,12 @@ int UavcanServers::init()
 		return ret;
 	}
 
+	// hw 버전
 	/* hardware version */
 	uavcan::protocol::HardwareVersion hwver;
 	UavcanNode::getHardwareVersion(hwver);
 
+	// dynamic node id 서버를 초기화
 	/* Initialize the dynamic node id server  */
 	ret = _server_instance.init(hwver.unique_id);
 
@@ -259,6 +273,7 @@ int UavcanServers::init()
 		return ret;
 	}
 
+	// 새로운 node로부터 node info를 가져오는 역할을 수행하는 node info retriever를 시작
 	/* Start node info retriever to fetch node info from new nodes */
 
 	ret = _node_info_retriever.start();
@@ -268,6 +283,7 @@ int UavcanServers::init()
 		return ret;
 	}
 
+	// fw 버전 체크 시작
 	/* Start the fw version checker   */
 
 	ret = _fw_upgrade_trigger.start(_node_info_retriever, _fw_version_checker.getFirmwarePath());
@@ -288,18 +304,21 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 
 	Lock lock(_subnode_mutex);
 
+	// ROMFS에 있는 firmware를 복사하여 SD 카드의 적절한 위치로 복사.
 	/*
 	Copy any firmware bundled in the ROMFS to the appropriate location on the
 	SD card, unless the user has copied other firmware for that device.
 	*/
 	unpackFwFromROMFS(UAVCAN_FIRMWARE_PATH, UAVCAN_ROMFS_FW_PATH);
 
+	// subscribe 호출은 동일한 thread에서 일어나도록...(생성자가 아니라)
 	/* the subscribe call needs to happen in the same thread,
 	 * so not in the constructor */
 	int cmd_sub = orb_subscribe(ORB_ID(vehicle_command));
 	int param_request_sub = orb_subscribe(ORB_ID(uavcan_parameter_request));
 	int armed_sub = orb_subscribe(ORB_ID(actuator_armed));
 
+	// shared service client들을 설정
 	/* Set up shared service clients */
 	_param_getset_client.setCallback(GetSetCallback(this, &UavcanServers::cb_getset));
 	_param_opcode_client.setCallback(ExecuteOpcodeCallback(this, &UavcanServers::cb_opcode));
@@ -329,6 +348,7 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 			warnx("node spin error %i", spin_res);
 		}
 
+		// parameter request를 검사(get/set/list)
 		// Check for parameter requests (get/set/list)
 		bool param_request_ready;
 		orb_check(param_request_sub, &param_request_ready);
@@ -339,6 +359,7 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 
 			if (_param_counts[request.node_id]) {
 				/*
+				 * 얼마나 많은 param이 해당 이 node로 expose되어 잇는지 알고 있으므로 request를 처리
 				 * We know how many parameters are exposed by this node, so
 				 * process the request.
 				 */
@@ -381,7 +402,7 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 					} else {
 						req.value.to<uavcan::protocol::param::Value::Tag::integer_value>() = request.int_value;
 					}
-
+					// 이 node를 위해 dirty bit를 설정
 					// Set the dirty bit for this node
 					set_node_params_dirty(request.node_id);
 
@@ -408,6 +429,7 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 			} else if (request.node_id == MAV_COMP_ID_ALL) {
 				if (request.message_type == MAVLINK_MSG_ID_PARAM_REQUEST_LIST) {
 					/*
+					 * 이 메시지로 아래 _param_list_in_progress인 경우를 처리하게 하지만 모든 active nodes에서 iterate
 					 * This triggers the _param_list_in_progress case below,
 					 * but additionally iterates over all active nodes.
 					 */
@@ -425,6 +447,7 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 
 			} else {
 				/*
+				 * 이 node에 얼마나 많은 param가
 				 * Need to know how many parameters this node has before we can
 				 * continue; count them now and then process the request.
 				 */
