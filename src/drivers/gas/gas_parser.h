@@ -113,6 +113,10 @@ class Parser {
 
     void Parse(uint8_t c);
 
+    uint16_t make_uint16(uint8_t high, uint8_t low);
+
 };
+
+
 
 

@@ -200,5 +200,4 @@ void Parser::Parse(uint8_t c){
         expectedState = STATE_START_BYTE;
     }
 
-
 }

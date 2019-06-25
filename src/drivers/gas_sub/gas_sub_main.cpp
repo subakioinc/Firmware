@@ -35,7 +35,7 @@ int gas_sub_main(int argc, char *argv[])
 				/* copy sensors raw data into local buffer */
 				orb_copy(ORB_ID(sensor_gas), gassub_fd, &raw);
 
-				PX4_INFO("Get temp : %f", raw.temp);
+				PX4_INFO("Get temp : %d", raw.temp);
 
 			}
 		}
