@@ -20,6 +20,8 @@ px4_add_board(
 		sim/tone_alarm
 		tone_alarm
 		#uavcan
+		gas
+		gas_sub
 
 	MODULES
 		attitude_estimator_q

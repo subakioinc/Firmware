@@ -180,22 +180,42 @@ void Parser::Parse(uint8_t c){
     {
         if(c == 0xFF){
             //Done!!
-            PX4_INFO("Done!!!\n");
 
             struct sensor_gas_s raw;
     	    memset(&raw, 0, sizeof(raw));
 	        orb_advert_t gas_pub = orb_advertise(ORB_ID(sensor_gas), &raw);
 
-            raw.temp = 0;
-            raw.temp =  cdc.temp_high << 8 ;
-            raw.temp += cdc.temp_low;
+            raw.timestamp = hrt_absolute_time();
+
+            raw.sensor_id = cdc.sensor_id;
+            raw.sensor_state = cdc.sensor_state;
+
+            raw.temp =  cdc.temp_high + 0.0; //cdc.temp_low add for spec.
+            raw.humid =  cdc.hum_high + 0.0; //cdc.hum_low add for spec.
+
+
+            raw.cdc_low[0] =cdc.sensor1.low;
+            raw.cdc_low[1] =cdc.sensor2.low;
+            raw.cdc_low[2] =cdc.sensor3.low;
+            raw.cdc_low[3] =cdc.sensor4.low;
+
+            raw.cdc_high[0] =cdc.sensor1.high;
+            raw.cdc_high[1] =cdc.sensor2.high;
+            raw.cdc_high[2] =cdc.sensor3.high;
+            raw.cdc_high[3] =cdc.sensor4.high;
+
+            raw.id[0] =cdc.sensor1.id;
+            raw.id[1] =cdc.sensor2.id;
+            raw.id[2] =cdc.sensor3.id;
+            raw.id[3] =cdc.sensor4.id;
+
+            raw.state[0] =cdc.sensor1.state;
+            raw.state[1] =cdc.sensor2.state;
+            raw.state[2] =cdc.sensor3.state;
+            raw.state[3] =cdc.sensor4.state;
+
 
             orb_publish(ORB_ID(sensor_gas), gas_pub, &raw);
-            // raw.humid = ;   // cdc.hub_high + cdc.hum_low
-            // raw.sensor1_cdc = ;  //cdc.sensor1.high + cdc.sensor1.low
-            // raw.sensor2_cdc = ;  //cdc.sensor2.high + cdc.sensor2.low
-            // raw.sensor3_cdc = ;  //cdc.sensor3.high + cdc.sensor3.low
-            // raw.sensor4_cdc = ;  //cdc.sensor4.high + cdc.sensor4.low
         }
         expectedState = STATE_START_BYTE;
     }

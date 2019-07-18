@@ -62,6 +62,7 @@
 
 #include <uORB/uORB.h>
 #include "gas_parser.h"
+#include <systemlib/mavlink_log.h>
 
 
 //
@@ -74,6 +75,9 @@
 
 // normal conversion wait time
 #define GAS_CONVERSION_INTERVAL 50*1000UL/* 50ms */
+
+/* Mavlink log uORB handle */
+static orb_advert_t mavlink_log_pub = nullptr;
 
 
 class GAS : public cdev::CDev, public px4::ScheduledWorkItem
@@ -334,6 +338,8 @@ void
 GAS::start()
 {
 	PX4_INFO("driver started");
+	PX4_ERR("gas start실행됐음");
+	mavlink_log_critical(&mavlink_log_pub, "GAS Detected!");
 
 	_reports->flush();
 

@@ -77,7 +77,8 @@
         "git.detectSubmodulesLimit": 20,
         "files.associations": {
                 "*.jinja": "jinja",
-                "iostream": "cpp"
+                "iostream": "cpp",
+                "thread": "cpp"
         },
         "search.exclude": {
                 "build/**": true
