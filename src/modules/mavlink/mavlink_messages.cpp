@@ -2715,7 +2715,12 @@ protected:
 		}
 
 		return false;
+		// {
+		// 	mavlink_mount_status_t msg;
+		// 	mavlink_msg_mount_status_send_struct(_mavlink->get_channel(), &msg);
+		// }
 	}
+
 };
 
 
