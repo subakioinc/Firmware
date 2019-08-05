@@ -127,5 +127,12 @@ px4_add_board(
 		rover_steering_control # Rover example app
 		segway
 		uuv_example_app
+		simple_c_app
+		simple_cpp_app
+		simple_subscribe
+		mysubscribe
+		mypublish
+		mymodule
+		mymodule_subscribe
 
 	)

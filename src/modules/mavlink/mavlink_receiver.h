@@ -82,6 +82,7 @@
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
+#include <uORB/topics/mission_subak.h>
 
 #include "mavlink_ftp.h"
 #include "mavlink_log_handler.h"
@@ -254,6 +255,8 @@ private:
 	orb_advert_t _trajectory_waypoint_pub{nullptr};
 	orb_advert_t _transponder_report_pub{nullptr};
 	orb_advert_t _visual_odometry_pub{nullptr};
+	orb_advert_t _mission_subak_pub{nullptr};
+
 
 	static constexpr int _gps_inject_data_queue_size{6};
 

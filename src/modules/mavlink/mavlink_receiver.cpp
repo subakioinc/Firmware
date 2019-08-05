@@ -468,6 +468,15 @@ void MavlinkReceiver::handle_message_command_both(mavlink_message_t *msg, const 
 	bool send_ack = true;
 	uint8_t result = vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED;
 
+	if(cmd_mavlink.command == 2011){
+		int instance_id = 0;
+		struct mission_subak_s raw = {};
+		raw.x = 33;
+		raw.y = 22;
+		orb_publish_auto(ORB_ID(mission_subak), &_mission_subak_pub, &raw, &instance_id, ORB_PRIO_HIGH);
+		PX4_INFO("I received command from QGC!!! 2011");
+	}
+
 	if (!target_ok) {
 		acknowledge(msg->sysid, msg->compid, cmd_mavlink.command, vehicle_command_ack_s::VEHICLE_RESULT_FAILED);
 		return;
