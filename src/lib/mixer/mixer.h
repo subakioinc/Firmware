@@ -686,7 +686,7 @@ public:
 		} flags;
 		uint16_t value;
 	};
-
+	void set_safety(bool safety);
 private:
 	float				_roll_scale;
 	float				_pitch_scale;
@@ -705,6 +705,7 @@ private:
 
 	float 				*_outputs_prev = nullptr;
 
+	bool _safety;
 	/* do not allow to copy due to ptr data members */
 	MultirotorMixer(const MultirotorMixer &);
 	MultirotorMixer operator=(const MultirotorMixer &);

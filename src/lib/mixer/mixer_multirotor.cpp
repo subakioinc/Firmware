@@ -75,7 +75,8 @@ MultirotorMixer::MultirotorMixer(ControlCallback control_cb,
 	_airmode(false),
 	_rotor_count(_config_rotor_count[(MultirotorGeometryUnderlyingType)geometry]),
 	_rotors(_config_index[(MultirotorGeometryUnderlyingType)geometry]),
-	_outputs_prev(new float[_rotor_count])
+	_outputs_prev(new float[_rotor_count]),
+	_safety(false)
 {
 	for (unsigned i = 0; i < _rotor_count; ++i) {
 		_outputs_prev[i] = _idle_speed;
@@ -144,6 +145,11 @@ MultirotorMixer::from_text(Mixer::ControlCallback control_cb, uintptr_t cb_handl
 		       s[1] / 10000.0f,
 		       s[2] / 10000.0f,
 		       s[3] / 10000.0f);
+}
+
+void MultirotorMixer::set_safety(bool safety)
+{
+	_safety = safety;
 }
 
 unsigned
