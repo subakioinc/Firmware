@@ -1259,6 +1259,7 @@ PX4IO::io_set_control_state(unsigned group)
 {
 	actuator_controls_s	controls;	///< actuator outputs
 	uint16_t 		regs[_max_actuators];
+	int32_t prop_fail = 0;
 
 	/* get controls */
 	bool changed = false;
@@ -1269,6 +1270,12 @@ PX4IO::io_set_control_state(unsigned group)
 
 			if (changed) {
 				orb_copy(ORB_ID(actuator_controls_0), _t_actuator_controls_0, &controls);
+				param_get(param_find("MAV_PROP_FAIL"), &prop_fail);
+				if (prop_fail == 0) {
+					controls.control[5] = 0;
+				} else {
+					controls.control[5] = 1;
+				}
 				perf_set_elapsed(_perf_sample_latency, hrt_elapsed_time(&controls.timestamp_sample));
 			}
 		}

@@ -141,3 +141,14 @@ PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
  * @group MAVLink
  */
 PARAM_DEFINE_INT32(MAV_BROADCAST, 0);
+
+/**
+ * Hexa Prop Failsafe Mode
+ *
+ * This allows a Hexa Prop Failsafe Mode
+ *
+ * @value 0 Normal Hexa
+ * @value 1 Failsafe Hexa
+ * @group MAVLink
+ */
+PARAM_DEFINE_INT32(MAV_PROP_FAIL, 0);
