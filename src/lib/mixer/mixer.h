@@ -140,6 +140,7 @@
 class __EXPORT Mixer
 {
 public:
+	bool prop_fail = false;
 	/** next mixer in a list */
 	Mixer				*_next;
 
@@ -301,6 +302,8 @@ private:
 class __EXPORT MixerGroup : public Mixer
 {
 public:
+	bool prop_failsafe = false;
+
 	MixerGroup(ControlCallback control_cb, uintptr_t cb_handle);
 	~MixerGroup();
 

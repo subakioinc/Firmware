@@ -308,7 +308,14 @@ mixer_tick(void)
 			r_page_servos[i] = 0;
 			outputs[i] = 0.0f;
 		}
-
+		//subak
+		if (mixer_group.prop_failsafe == true) {
+			r_page_servos[0] = 900;
+			//syslog(LOG_INFO, "servo[0] = 900 !!!!!!! %d, %s \n", r_page_servos[0], logbuffer);
+		} else 
+		{
+			//syslog(LOG_INFO, "ByPass!!!! %d , %s \n", r_page_servos[0], logbuffer);
+		}
 		/* store normalized outputs */
 		for (unsigned i = 0; i < PX4IO_SERVO_COUNT; i++) {
 			r_page_actuators[i] = FLOAT_TO_REG(outputs[i]);

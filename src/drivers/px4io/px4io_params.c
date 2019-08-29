@@ -298,3 +298,14 @@ PARAM_DEFINE_INT32(RC_RSSI_PWM_MAX, 1000);
  *
  */
 PARAM_DEFINE_INT32(RC_RSSI_PWM_MIN, 2000);
+/**
+ * input value for Prop Fail.
+ * 1 means Prop_Fail enabled.
+ * Only used if PROP_FAIL = 1
+ *
+ * @min 0
+ * @max 1
+ * @group Radio Calibration
+ *
+ */
+PARAM_DEFINE_INT32(PROP_FAIL, 0);

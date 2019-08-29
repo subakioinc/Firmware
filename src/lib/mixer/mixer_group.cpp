@@ -107,11 +107,19 @@ MixerGroup::mix(float *outputs, unsigned space)
 {
 	Mixer	*mixer = _first;
 	unsigned index = 0;
+	bool isfail = false; //subak
 
 	while ((mixer != nullptr) && (index < space)) {
 		index += mixer->mix(outputs + index, space - index);
+		//subak
+		if (mixer->prop_fail == true){
+			isfail = true;
+		}
+		//
 		mixer = mixer->_next;
 	}
+	
+	prop_failsafe = isfail; 	//subak
 
 	return index;
 }

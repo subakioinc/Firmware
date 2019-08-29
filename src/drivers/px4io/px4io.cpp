@@ -1270,12 +1270,14 @@ PX4IO::io_set_control_state(unsigned group)
 
 			if (changed) {
 				orb_copy(ORB_ID(actuator_controls_0), _t_actuator_controls_0, &controls);
-				param_get(param_find("MAV_PROP_FAIL"), &prop_fail);
-				if (prop_fail == 0) {
-					controls.control[5] = 0;
+				//subak
+				param_get(param_find("PROP_FAIL"), &prop_fail);
+				if (prop_fail == 0){
+					controls.control[5] = 0.0f;
 				} else {
-					controls.control[5] = 1;
+					controls.control[5] = 0.1f;
 				}
+
 				perf_set_elapsed(_perf_sample_latency, hrt_elapsed_time(&controls.timestamp_sample));
 			}
 		}
