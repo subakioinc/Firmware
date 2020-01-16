@@ -76,6 +76,7 @@ set(msg_files
 	mavlink_log.msg
 	mission.msg
 	mission_result.msg
+	mission_subak.msg
 	mount_orientation.msg
 	multirotor_motor_limits.msg
 	obstacle_distance.msg
