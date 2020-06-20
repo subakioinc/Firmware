@@ -163,6 +163,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		break;
 
 	case MAVLINK_MSG_ID_VISION_POSITION_ESTIMATE:
+		PX4_INFO("vision position received!!!");
 		handle_message_vision_position_estimate(msg);
 		break;
 
