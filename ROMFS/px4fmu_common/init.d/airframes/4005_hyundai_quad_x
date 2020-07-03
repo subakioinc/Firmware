@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# @name Hyundai Quad
+#
+# @type Quadrotor x
+# @class Copter
+#
+# @maintainer Jeyong Shin <jeyong@subak.io>
+#
+#
+
+sh /etc/init.d/rc.mc_defaults
+
+set MIXER quad_x
+
+set PWM_OUT 1234
+
+if [ $AUTOCNF = yes ]
+then
+	param set EKF2_AID_MASK 24
+	param set EKF2_HGT_MODE 3
+	param set MAV_1_CONFIG 102
+	param set MAV_1_MODE 2
+	param set SER_TEL2_BAUD 921600
+	param set SENS_EN_LL40LS 1
+	param set EKF2_HGT_MODE 2
+	param set EKF2_RNG_AID 1
+
+fi
