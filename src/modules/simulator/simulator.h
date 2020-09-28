@@ -80,6 +80,7 @@
 
 using namespace time_literals;
 
+// sensor emulation을 위한 bitmask
 //! Enumeration to use on the bitmask in HIL_SENSOR
 enum class SensorSource {
 	ACCEL		= 0b111,
@@ -107,6 +108,16 @@ static inline SensorSource operator &(A lhs, B rhs)
 		       static_cast<underlying>(rhs)
 	       );
 }
+
+// Simulator 클래스 정의
+//  * 통신 방법 : TCP와 UDP 지원
+//  * publish/subscribe 관점
+//    * subscribe : PX4 내부 -> Simulator 모듈 -> Gazebo
+//      * 어떤 것들이 있나?
+//    * publish : Gazebo -> Simulator 모듈 -> PX4 내부 -> PX4 내부 모듈
+//      * 어떤 것들이 있나?
+//  * Simulator 모듈 <-> Gazebo 통신 방법 : Mavlink
+//  * mavlink 메시지 처리 : handler
 
 class Simulator : public ModuleParams
 {

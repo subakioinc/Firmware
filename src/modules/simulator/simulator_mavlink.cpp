@@ -636,6 +636,19 @@ void Simulator::send_heartbeat()
 	send_mavlink_message(message);
 }
 
+//  - 구조 -
+//  init()
+//  while(1){
+// 	 run()
+//  }
+// run()에서 하는 일
+//  * PX4 <-> Gazebo 통신
+//    * actuator 보내기
+//    * Gazebo로부터 mavlink 수신
+// 구현 방법 :
+//  * thread 추가 생성 : send
+//  * main thread : mavlink 수신
+
 void Simulator::run()
 {
 #ifdef __PX4_DARWIN

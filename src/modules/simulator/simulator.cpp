@@ -47,6 +47,11 @@
 
 #include "simulator.h"
 
+// 실습
+//  * VSC에서 함수 접기
+//  * 각 함수가 하는 일
+//  * entry point는?
+
 static px4_task_t g_sim_task = -1;
 
 Simulator *Simulator::_instance = nullptr;
@@ -64,6 +69,7 @@ void Simulator::parameters_update(bool force)
 	}
 }
 
+// 현재 simulator 모듈 상태 표시
 void Simulator::print_status()
 {
 	PX4_INFO("magnetometer");
