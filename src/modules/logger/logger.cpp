@@ -541,6 +541,7 @@ void Logger::run()
 {
 	PX4_INFO("logger started (mode=%s)", configured_backend_mode());
 
+	// log파일 디렉토리 생성 및 공간 확인
 	if (_writer.backend() & LogWriter::BackendFile) {
 		int mkdir_ret = mkdir(LOG_ROOT[(int)LogType::Full], S_IRWXU | S_IRWXG | S_IRWXO);
 
@@ -563,10 +564,12 @@ void Logger::run()
 
 	uORB::Subscription parameter_update_sub(ORB_ID(parameter_update));
 
+	// subscription topic 초기화 (LoggedTopics 에서 subscription 할 topic 관리)
 	if (!initialize_topics()) {
 		return;
 	}
 
+	// 가장 큰 msg의 size로 최대 buffer 크기 지정
 	//all topics added. Get required message buffer size
 	int max_msg_size = 0;
 
@@ -602,6 +605,7 @@ void Logger::run()
 	}
 
 
+	// _writer 초기화
 	if (!_writer.init()) {
 		PX4_ERR("writer init failed");
 		return;
@@ -613,8 +617,10 @@ void Logger::run()
 
 	px4_register_shutdown_hook(&Logger::request_stop_static);
 
+	// boot logging 비활성화
 	const bool disable_boot_logging = get_disable_boot_logging();
 
+	// disarm인 경우에도 log 하라는 param이 설정된 경우 log 시작
 	if ((_log_mode == LogMode::boot_until_disarm || _log_mode == LogMode::boot_until_shutdown) && !disable_boot_logging) {
 		start_log_file(LogType::Full);
 	}
@@ -628,6 +634,7 @@ void Logger::run()
 
 	int polling_topic_sub = -1;
 
+	// polli_polling_topic_meta msg ID로 subscribe한다.
 	if (_polling_topic_meta) {
 		polling_topic_sub = orb_subscribe(_polling_topic_meta);
 
@@ -659,6 +666,7 @@ void Logger::run()
 	}
 
 	while (!should_exit()) {
+		// logging 시작/정지를 결정하는 변수
 		// Start/stop logging (depending on logging mode, by default when arming/disarming)
 		const bool logging_started = start_stop_logging();
 
@@ -669,6 +677,7 @@ void Logger::run()
 #endif /* DBGPRINT */
 		}
 
+		// mavlink로부터 logging 시작/정지관련 명령이 왔는지 체크
 		/* check for logging command from MAVLink (start/stop streaming) */
 		handle_vehicle_command_update();
 
@@ -877,7 +886,7 @@ void Logger::run()
 			while (px4_sem_wait(&timer_callback_data.semaphore) != 0) {}
 		}
 	}
-
+	// logger 모듈 종류시 resource 반환
 	px4_lockstep_unregister_component(_lockstep_component);
 
 	stop_log_file(LogType::Full);
