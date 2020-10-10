@@ -95,22 +95,39 @@ fi
 if [ "$program" == "jmavsim" ] && [ ! -n "$no_sim" ]; then
 	# Start Java simulator
 	# Java 시뮬레이터를 시작한다 
+
+	# bash scripts?  
+	# -r : recursive , 
+	# -f : 특정 file 지정 
+	# -l : text를 나열한다?????
+
 	"$src_path"/Tools/jmavsim_run.sh -r 250 -f $speed_factor -l &
 	SIM_PID=`echo $!`
+	# 인자로 들어온 프로그램이 gazebo 이고 no_sim인 경우 
 elif [ "$program" == "gazebo" ] && [ ! -n "$no_sim" ]; then
+	# -x : 실행파일 명세 
 	if [ -x "$(command -v gazebo)" ]; then
+		# -z : string의 길이가 zero
+		# DONT_RUN이가 null인 경우 
 		if  [[ -z "$DONT_RUN" ]]; then
 			# Set the plugin path so Gazebo finds our model and sim
+			# Gazebo가 model과 sim을 찾도록 Plugin path 설정한다 
 			source "$src_path/Tools/setup_gazebo.bash" "${src_path}" "${build_path}"
 
+			# gzserver로 world 실행 
 			gzserver --verbose "${src_path}/Tools/sitl_gazebo/worlds/${model}.world" &
 			SIM_PID=`echo $!`
 
+			# HEADLESS : gazebo client(GUI)를 사용하지 않는 경우 
 			if [[ -n "$HEADLESS" ]]; then
 				echo "not running gazebo gui"
 			else
 				# gzserver needs to be running to avoid a race. Since the launch
 				# is putting it into the background we need to avoid it by backing off
+				
+				# gzserver와 gzclient가 함께 실행 되는 것을 피해야 한다 
+				# gzserver에 필요한 설정들을 먼저 해준다음에 gzclient를 실행햐아 함
+				# 그래서 sleep을 걸어 주고 client 실행 함 
 				sleep 3
 				nice -n 20 gzclient --verbose &
 				GUI_PID=`echo $!`
@@ -125,6 +142,7 @@ fi
 pushd "$rootfs" >/dev/null
 
 # Do not exit on failure now from here on because we want the complete cleanup
+# 기존에 살아있는 프로세스를 모두 정리를 해야 하므로 실패시 종료 하지마시오
 set +e
 
 if [[ ${model} == test_* ]] || [[ ${model} == *_generated ]]; then
@@ -137,9 +155,13 @@ echo SITL COMMAND: $sitl_command
 
 export PX4_SIM_MODEL=${model}
 
+# eval : 인자를 치환 할때 사용 
 
+# DONT_RUN인자가 있는 경우 
 if [[ -n "$DONT_RUN" ]]; then
 	echo "Not running simulation (\$DONT_RUN is set)."
+# lldb / gdb / ddd / valgrind / callgrind / ide 라는 디버거 사용시 
+	# dlswkfmf 위에설정한 sitl_command로 인자 치환 
 elif [ "$debugger" == "lldb" ]; then
 	eval lldb -- $sitl_command
 elif [ "$debugger" == "gdb" ]; then
@@ -164,7 +186,9 @@ fi
 
 popd >/dev/null
 
+# 인자로 DONT_RUN 들어온경우 
 if [[ -z "$DONT_RUN" ]]; then
+	# 해당 시뮬레이션(jmavsim/gazebo) 해당 프로르세스 죽임 
 	if [ "$program" == "jmavsim" ]; then
 		pkill -9 -P $SIM_PID
 		kill -9 $SIM_PID
