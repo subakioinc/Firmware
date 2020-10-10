@@ -106,6 +106,8 @@ if [ "$program" == "jmavsim" ] && [ ! -n "$no_sim" ]; then
 	# 인자로 들어온 프로그램이 gazebo 이고 no_sim인 경우 
 elif [ "$program" == "gazebo" ] && [ ! -n "$no_sim" ]; then
 	# -x : 실행파일 명세 
+		# command -v gazebo : gazebo가 설치된 path 출력 됨 ("/usr/local/bin/gazebo")
+		# gazebo 설치가 된경우 진행 
 	if [ -x "$(command -v gazebo)" ]; then
 		# -z : string의 길이가 zero
 		# DONT_RUN이가 null인 경우 
@@ -188,7 +190,7 @@ popd >/dev/null
 
 # 인자로 DONT_RUN 들어온경우 
 if [[ -z "$DONT_RUN" ]]; then
-	# 해당 시뮬레이션(jmavsim/gazebo) 해당 프로르세스 죽임 
+	# 해당 시뮬레이션(jmavsim/gazebo)해당 프로르세스 죽임 
 	if [ "$program" == "jmavsim" ]; then
 		pkill -9 -P $SIM_PID
 		kill -9 $SIM_PID
