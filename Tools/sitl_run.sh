@@ -2,6 +2,7 @@
 
 set -e
 
+# 인자 번호 설정 
 sitl_bin="$1"
 debugger="$2"
 program="$3"
@@ -9,7 +10,9 @@ model="$4"
 src_path="$5"
 build_path="$6"
 # The rest of the arguments are files to copy into the working dir.
+# 나머지 인자들은 working 디렉터리에 복사 할 파일들이다
 
+# 들어온 인자 echo로 출력 
 echo SITL ARGS
 
 echo sitl_bin: $sitl_bin
@@ -19,9 +22,11 @@ echo model: $model
 echo src_path: $src_path
 echo build_path: $build_path
 
+# working 디렉터리 빌드시 생성 
 rootfs="$build_path/tmp/rootfs" # this is the working directory
 mkdir -p "$rootfs"
 
+# 사용자 입력을 비활성화 할경우 즉,px4 shell사용 하지 않는 경우 
 # To disable user input
 if [[ -n "$NO_PXH" ]]; then
 	no_pxh=-d
@@ -29,18 +34,28 @@ else
 	no_pxh=""
 fi
 
+# 인자로 들어온 모델명이 있는 경우 
 if [ "$model" != none ]; then
+	# ps aux -> 모든 프로세스를 보여줌
+	# grep -> 패턴을 찾을 때 사용 
+		# grep java -> java라는 단어가 포함된 프로세스를 찾음 
+		# grep "\-jar ...."  -> 해당 jar 파일이 포함된 프로세스 사녕ㄹ 
+	# awk '{ print $2 }' 찾은 파일의 두번째 인자 출력 
 	jmavsim_pid=`ps aux | grep java | grep "\-jar jmavsim_run.jar" | awk '{ print $2 }'`
+	# jmavsim 프로세스가 생성되어 있는 경우 프로세스 죽임 
 	if [ -n "$jmavsim_pid" ]; then
 		kill $jmavsim_pid
 	fi
 fi
 
+# 인자로 설정된 model의 값이 없거나 "none"으로 들어온경우 
 if [ "$model" == "" ] || [ "$model" == "none" ]; then
+	# model없으니 iris를 기본값으로 설정함 
 	echo "empty model, setting iris as default"
 	model="iris"
 fi
 
+# 들어온 인자의 수가 6개 미만일 경우 ehco로 사용방법 프린트 후 종료 
 if [ "$#" -lt 6 ]; then
 	echo usage: sitl_run.sh sitl_bin debugger program model src_path build_path
 	echo ""
@@ -49,13 +64,18 @@ fi
 
 # kill process names that might stil
 # be running from last time
+
+# 마지막 까지 실행 될수 있는 프로세스 (gazebo, px, px4_model)등을 kill명령으로 종료
 pkill -x gazebo || true
 pkill -x px4 || true
 pkill -x px4_$model || true
 
+# posix_lldbinit, posix.gdbinit 파일을 working 디렉터리에 복사   --> 두개의 파일의 무슨 파일인지???
 cp "$src_path/Tools/posix_lldbinit" "$rootfs/.lldbinit"
 cp "$src_path/Tools/posix.gdbinit" "$rootfs/.gdbinit"
 
+# shift는 인자들을 삭제하는 기능 
+# 인자로 들어온 이외의 파일들도 working 디렉터리에 복사 
 shift 6
 for file in "$@"; do
 	cp "$file" $rootfs/
@@ -63,6 +83,7 @@ done
 
 SIM_PID=0
 
+# speed factor(속도계수)가 시뮬레이션 환경에서 설정되도록 허용
 # Allow speed factor to bet set from environment.
 if [[ -n "$PX4_SIM_SPEED_FACTOR" ]]; then
 	speed_factor=$PX4_SIM_SPEED_FACTOR
@@ -70,8 +91,10 @@ else
 	speed_factor=1
 fi
 
+# 프로그램이 jamvsim 이고, no_sim의 인자가 없는 경우  ????
 if [ "$program" == "jmavsim" ] && [ ! -n "$no_sim" ]; then
 	# Start Java simulator
+	# Java 시뮬레이터를 시작한다 
 	"$src_path"/Tools/jmavsim_run.sh -r 250 -f $speed_factor -l &
 	SIM_PID=`echo $!`
 elif [ "$program" == "gazebo" ] && [ ! -n "$no_sim" ]; then
