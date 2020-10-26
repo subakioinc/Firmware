@@ -163,7 +163,7 @@ export PX4_SIM_MODEL=${model}
 if [[ -n "$DONT_RUN" ]]; then
 	echo "Not running simulation (\$DONT_RUN is set)."
 # lldb / gdb / ddd / valgrind / callgrind / ide 라는 디버거 사용시 
-	# dlswkfmf 위에설정한 sitl_command로 인자 치환 
+	# 위에설정한 sitl_command로 인자 치환 
 elif [ "$debugger" == "lldb" ]; then
 	eval lldb -- $sitl_command
 elif [ "$debugger" == "gdb" ]; then
